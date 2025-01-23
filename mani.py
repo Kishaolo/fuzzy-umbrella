@@ -1,2 +1,1 @@
-print(hello world)
-pisa
+print("hello world")
