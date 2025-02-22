@@ -1,5 +1,6 @@
 from django.db import models
 
+#class Operation sozdaet table v db pod nozvaniem Operation
 class Operation(models.Model):
 
     name = models.TextField(
@@ -30,8 +31,10 @@ class Product(models.Model):
         blank=True,
         null=True,
     )
+    #parametr blank oznochaet chto pole moshet bit pystim
+    #parametr null pole moshet sodershat parametr null to est bit pystim
     price = models.FloatField(
-        verbose_name="stoimost"
+        verbose_name="stoimost",
     )
     kolvo_na_sklade = models.TextField(
         verbose_name = int(99)
