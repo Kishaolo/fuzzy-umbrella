@@ -12,5 +12,5 @@ def send_order_notification(sender, instance, created, **kwargs):
             f'postypil novii zakaz #{instance.id}.',
             'noreply@example.com',
             ['admin@example.com'],
-            
+            fail_silently=False,
         )

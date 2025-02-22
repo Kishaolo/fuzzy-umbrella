@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'operations.apps.OperationConfig',
 ]
 
 MIDDLEWARE = [
@@ -65,7 +66,6 @@ TEMPLATES = [
             ],
         },
     },
-    'magazin'
 ]
 
 WSGI_APPLICATION = 'backend.wsgi.application'
