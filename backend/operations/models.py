@@ -69,18 +69,15 @@ class Product(models.Model):
 class Books(models.Model):
     title = models.CharField(max_length=200)
     published_date = models.CharField(max_length=200)
-    author = models.OneToOneField(
-        Author
-    )
+    
     def __str__(self):
         return f"{self.title}, by {self.author} ({self.published_date})"
     
 class Author(models.Model):
     name = models.CharField(max_length=255)
     # sdelali svaz one-to-many
-    books = models.ForeignKey(
+    books = models.ManyToManyField(
         Books, 
-        on_delete=models.CASCADE,
         related_name='books', 
         null=True,
     )
@@ -107,7 +104,7 @@ class Xron(models.Model):
          User, 
          blank=True, 
          null=True, 
-         on_delete=models.CASCADE, 
+         on_delete=models.CASCADE,
     )
 
     def __str__(self):
