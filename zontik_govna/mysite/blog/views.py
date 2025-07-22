@@ -31,7 +31,7 @@ def post_detail(request, id):
 def post_list(request):
     posts = Post.published.all()
     return render(
-            post, 
+            request, 
             'blog/post/list.html', 
-            {'blog': posts}
+            {'posts': posts}
             )
