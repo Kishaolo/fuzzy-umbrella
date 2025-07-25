@@ -1,9 +1,11 @@
 from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import User
+from django.urls import reverse
 
 # Create your models here.
 class PublishedManager(models.Manager):
+    """kastomnii manager"""
     def get_queryset(self):
         return super().get_queryset()\
                 .filter(status=Post.Status.PUBLISHED)
@@ -15,7 +17,8 @@ class Post(models.Model):
         PUBLISHED = 'PB', 'Published'
 
     title = models.CharField(max_length=250) #zagolovok posta
-    slug = models.SlugField(max_length=250) #korotkaia metka
+    slug = models.SlugField(max_length=250, 
+                            unique_for_date='publish') #korotkaia metka
     author = models.ForeignKey(
             User, 
             on_delete=models.CASCADE, 
@@ -42,3 +45,12 @@ class Post(models.Model):
 
     def __str__(self):
         return self.title
+
+    def get_absolute_url(self):
+        return reverse(
+                'blog:post_detail', 
+                args=[self.publish.year, 
+                      self.publish.month, 
+                      self.publish.day, 
+                      self.slug]
+                )
