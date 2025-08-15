@@ -1,10 +1,11 @@
 from django.shortcuts import render, get_object_or_404
-from .models import Post
+from .models import Post, Comment
 from django.http import Http404
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.views.generic import ListView
-from .forms import EmailPostForms
+from .forms import EmailPostForms, CommentForm
 from django.core.mail import send_mail
+from django.views.decorators.http import require_POST
 
 # Create your views here.
 def post_detail(request, year, month, day, post):
@@ -18,6 +19,10 @@ def post_detail(request, year, month, day, post):
             publish__month=month, 
             publish__day=day
             )
+    # spisok aktivnix commentov k atomy posty
+    comments = post.comments.filter(active=True)
+    # forma dla comentirovania userov
+    form = CommentForm()
 
     #post = get_object_or_404(
      #       Post, 
@@ -32,7 +37,9 @@ def post_detail(request, year, month, day, post):
     return render(
             request, 
             'blog/post/detail.html', 
-            {'post': post}
+            {'post': post, 
+             'comments': comments, 
+             'form': form}
             )
 
 class PostListView(ListView):
@@ -69,3 +76,23 @@ def post_share(request, post_id):
                   {'post': post, 
                    'form': form, 
                    'sent': sent})
+
+@require_POST
+def post_comment(request, post_id):
+    post = get_object_or_404(Post, 
+                            id=post_id, 
+                            status=Post.Status.PUBLISHED)
+    comment = None
+    form = CommentForm(data=request.POST)
+    if form.is_valid():
+        # sozdaet comment i ne soxronaet ego v db 
+        comment = form.save(commit=False)
+        #naznachit post komentariu
+        comment.post = post
+        #soxranit comment b db 
+        comment.save()
+    return render(request, 
+                  'blog/post/comment.html', 
+                  {'post': post, 
+                   'form': form, 
+                   'comment': comment})

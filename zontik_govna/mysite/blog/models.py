@@ -53,3 +53,23 @@ class Post(models.Model):
                       self.publish.day, 
                       self.slug]
                 )
+
+class Comment(models.Model):
+    post = models.ForeignKey(Post, 
+                      on_delete=models.CASCADE, 
+                      related_name="comments") #svaz one-to-many nyshna dla privazke k opredelennomy posty
+    #related_name nyshna dla imeni atribyta dla obratnoi svazi
+    
+    name = models.CharField(max_length=80) #ima chela kotorii ostavil coment
+    email = models.EmailField() #email (xz zachem)
+    body = models.TextField() #telo comenta
+    created = models.DateTimeField(auto_now_add=True) #toshe avtosave
+    updated = models.DateTimeField(auto_now=True) #avto save dati 
+    active = models.BooleanField(default=True) #dla udalenia ploxix komentov
+
+    class Meta:
+        ordering = ['created'] #sortirovka po  attr created
+        indexes = [models.Index(fields=['created'])] # indeksatsia v vozrastaushem poradke
+
+    def __str__(self):
+        return f'Comment by {self.name} on {self.post}'
