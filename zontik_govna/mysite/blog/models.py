@@ -7,8 +7,7 @@ from django.urls import reverse
 class PublishedManager(models.Manager):
     """kastomnii manager"""
     def get_queryset(self):
-        return super().get_queryset()\
-                .filter(status=Post.Status.PUBLISHED)
+        return super().get_queryset().filter(status=Post.Status.PUBLISHED)
 
 class Post(models.Model):
 

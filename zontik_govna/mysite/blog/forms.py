@@ -1,0 +1,8 @@
+from django import forms
+
+class EmailPostForms(forms.Form):
+    name = forms.CharField(max_length=25) #name people who send email
+    email = forms.EmailField() # email who send email
+    to = forms.EmailField() # email who receive email
+    comment = forms.CharField(required=False,
+                              widget=forms.Textarea) # comments kotorie bydyt paste in email (optional)
