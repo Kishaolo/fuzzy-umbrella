@@ -3,7 +3,7 @@ from .models import Post, Comment
 from django.http import Http404
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.views.generic import ListView
-from django.contrib.postgres.search import SearchVector, SearchQuery, SearchRank 
+from django.contrib.postgres.search import SearchVector, SearchQuery, SearchRank, TrigramSimilarity 
 from .forms import EmailPostForms, CommentForm, SearchForm
 from django.core.mail import send_mail
 from django.views.decorators.http import require_POST
@@ -140,10 +140,7 @@ def post_search(request):
         if form.is_valid(): 
             query = form.cleaned_data['query']
             #k search_vector применили вес. Это значит, что теперь в приоретете ищутся совпадения в заголовках.
-            search_vector = SearchVector('title', weight='A') +  SearchVector('body', weight='B')
-            search_query = SearchQuery(query, config='spanish')
-            results = Post.published.annotate(search=search_vector, rank=SearchRank(search_vector, search_query)).filter(rank__gte=0.3).order_by('-rank') # filter настроен на ранк 0.3 и выше
-
+            results = Post.published.annotate(similarity=TrigramSimilarity('title', query),).filter(similarity__gt=0.1).order_by('-similarity')
     return render(request, 
                   'blog/post/search.html', 
                   {'form': form, 
