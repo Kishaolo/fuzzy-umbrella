@@ -3,9 +3,12 @@ from .models import Post, Comment
 from django.http import Http404
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.views.generic import ListView
-from .forms import EmailPostForms, CommentForm
+from django.contrib.postgres.search import SearchVector, SearchQuery, SearchRank 
+from .forms import EmailPostForms, CommentForm, SearchForm
 from django.core.mail import send_mail
 from django.views.decorators.http import require_POST
+from taggit.models import Tag
+from django.db.models import Count
 
 # Create your views here.
 def post_detail(request, year, month, day, post):
@@ -34,22 +37,50 @@ def post_detail(request, year, month, day, post):
     #except:
      #   raise Http404("No Post found.")
 
+    #spisok sxoshix postov
+    """
+    1. Берется список тегов по ид, они идут в кортежах поэтому к ним добовляется флат для того чтоб получить элимент а не одиночный картеж
+    2. Выбираются все посты без текущего
+    3. футкция Count запимывает в -same_tags число тегов обшиз с запрошеным
+    4. результат урорядочивается по убыванию (сначала новые)
+    5. Объект similar_posts передается в словарь для функции render
+    """
+    post_tags_ids = post.tags.values_list('id', flat=True)
+    similar_posts = Post.published.filter(tags__in=post_tags_ids).exclude(id=post.id) #__in poisk po polu
+    similar_posts = similar_posts.annotate(same_tags=Count('tags')).order_by('-same_tags', '-publish')[:4]
+    
     return render(
             request, 
             'blog/post/detail.html', 
             {'post': post, 
              'comments': comments, 
-             'form': form}
+             'form': form, 
+             'similar_posts': similar_posts}
             )
 
-class PostListView(ListView):
-    """
-    Alternativa funktsiam
-    """
-    queryset = Post.published.all()
-    context_object_name = "posts"
-    paginate_by = 3 
-    template_name = "blog/post/list.html"
+
+def post_list(request, tag_slug=None):
+    post_list = Post.published.all()
+    tag=None 
+    if tag_slug:
+        tag = get_object_or_404(Tag, slug=tag_slug)
+        post_list = post_list.filter(tags__in=[tag])
+    #paginatsia po 3
+    paginator = Paginator(post_list, 3)
+    page_number = request.GET.get('page', 1)
+    try:
+        posts = paginator.page(page_number)
+    except PageAnInteger:
+        #esli page_number ne int to vidat first page
+        posts = paginator.page(1)
+    except EmptyPage:
+        #esli page_number naxoditsa vne diapazona ot vidat posledniustranitsu diapazona 
+        posts = paginator.page(paginator.num_pages)
+    return render(request, 
+                  'blog/post/list.html', 
+                  {'posts': posts, 
+                   'tag': tag})
+
 
 def post_share(request, post_id):
 #izvlech post po indentifukatoru id 
@@ -77,6 +108,7 @@ def post_share(request, post_id):
                    'form': form, 
                    'sent': sent})
 
+
 @require_POST
 def post_comment(request, post_id):
     post = get_object_or_404(Post, 
@@ -96,3 +128,24 @@ def post_comment(request, post_id):
                   {'post': post, 
                    'form': form, 
                    'comment': comment})
+
+
+def post_search(request): 
+    form = SearchForm() 
+    query = None 
+    results = []
+
+    if 'query' in request.GET: 
+        form = SearchForm(request.GET)
+        if form.is_valid(): 
+            query = form.cleaned_data['query']
+            #k search_vector применили вес. Это значит, что теперь в приоретете ищутся совпадения в заголовках.
+            search_vector = SearchVector('title', weight='A') +  SearchVector('body', weight='B')
+            search_query = SearchQuery(query, config='spanish')
+            results = Post.published.annotate(search=search_vector, rank=SearchRank(search_vector, search_query)).filter(rank__gte=0.3).order_by('-rank') # filter настроен на ранк 0.3 и выше
+
+    return render(request, 
+                  'blog/post/search.html', 
+                  {'form': form, 
+                   'query': query, 
+                   'results': results})
